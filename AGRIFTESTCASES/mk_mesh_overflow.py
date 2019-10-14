@@ -128,21 +128,33 @@ if match_bat == 1:
 
 # Set parent vertical grid at T-points:
 (depw_1d0, dept_1d0, e3t_1d0, e3w_1d0) = set_uniform_refvgrid(dz0, jpk0)
-if ln_zps0 == 1:
+if ln_zco0 == 1:
+    (kbot0, batt0, e3t0, e3w0, depw0, dept0) = \
+    set_zcovgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
+elif ln_zps0 == 1:
     (kbot0, batt0, e3t0, e3w0, depw0, dept0) = \
     set_pstepvgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
 elif ln_sco0 == 1:
     (kbot0, batt0, e3t0, e3w0, depw0, dept0) = \
     set_scovgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
+#    depmax0 = np.amax(batt1[nghost:jpi1-nghost,nghost:jpj1-nghost])
+#    (kbot0, batt0, e3t0, e3w0, depw0, dept0) = \
+#    set_scotopofzvgrid(batt0, depmax0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
 
 # Set child vertical grid at T-points:
 (depw_1d1, dept_1d1, e3t_1d1, e3w_1d1) = set_uniform_refvgrid(dz1, jpk1)
-if ln_zps1 == 1:
+if ln_zco1 == 1:
+    (kbot1, batt1, e3t1, e3w1, depw1, dept1) = \
+    set_zcovgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
+elif ln_zps1 == 1:
     (kbot1, batt1, e3t1, e3w1, depw1, dept1) = \
     set_pstepvgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
 elif ln_sco1 == 1:
     (kbot1, batt1, e3t1, e3w1, depw1, dept1) = \
     set_scovgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
+#    depmax1 = np.amax(batt1[nghost:jpi1-nghost,nghost:jpj1-nghost])
+#    (kbot1, batt1, e3t1, e3w1, depw1, dept1) = \
+#    set_scotopofzvgrid(batt1, depmax1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
 
 if match_bat == 1:
 # Adjust grids with partial cells (beta):
@@ -295,4 +307,5 @@ plt.ylim((-50., 2200.))
 plt.xlabel('X[km]')
 plt.ylabel('Depth [m]')
 plt.gca().invert_yaxis()
+plt.savefig('Overflow.png')
 plt.show()
