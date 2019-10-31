@@ -13,6 +13,7 @@ dz0 = 100.
 ln_zco0 = 0
 ln_zps0 = 1
 ln_sco0 = 0
+stype0 = 0
 ln_isfcav0 = 0
 jperio0 = 0
 
@@ -27,6 +28,7 @@ dz1 = 100.
 ln_zco1 = 0
 ln_zps1 = 1
 ln_sco1 = 0
+stype1 = 1
 ln_isfcav1 = 0
 jperio1 = 0
 
@@ -95,13 +97,13 @@ def set_overflow_hgrid(dx, dy, jpi, jpj, zoffx, zoffy):
     # Set surface mask:
     ktop = np.zeros((jpi, jpj))
     ktop[1:jpi - 1, nghost + 1:jpj - nghost - 1] = 1
-    # batt = np.where( (ktop==0.), 0., batt)
+    batt = np.where((ktop == 0.), 0., batt)
 
     # Set coriolis parameter:
     ff_t = np.zeros((jpi, jpj))
     ff_f = np.zeros((jpi, jpj))
 
-    return lont, latt, lonu, latu, lonv, latv, lonf, latf,\
+    return lont, latt, lonu, latu, lonv, latv, lonf, latf, \
            e1t, e2t, e1u, e2u, e1v, e2v, e1f, e2f, batt, ktop, ff_f, ff_t
 
 
@@ -136,10 +138,7 @@ elif ln_zps0 == 1:
     set_pstepvgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
 elif ln_sco0 == 1:
     (kbot0, batt0, e3t0, e3w0, depw0, dept0) = \
-    set_scovgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
-#    depmax0 = np.amax(batt1[nghost:jpi1-nghost,nghost:jpj1-nghost])
-#    (kbot0, batt0, e3t0, e3w0, depw0, dept0) = \
-#    set_scotopofzvgrid(batt0, depmax0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
+    set_scovgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0, stype0)
 
 # Set child vertical grid at T-points:
 (depw_1d1, dept_1d1, e3t_1d1, e3w_1d1) = set_uniform_refvgrid(dz1, jpk1)
@@ -151,14 +150,11 @@ elif ln_zps1 == 1:
     set_pstepvgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
 elif ln_sco1 == 1:
     (kbot1, batt1, e3t1, e3w1, depw1, dept1) = \
-    set_scovgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
-#    depmax1 = np.amax(batt1[nghost:jpi1-nghost,nghost:jpj1-nghost])
-#    (kbot1, batt1, e3t1, e3w1, depw1, dept1) = \
-#    set_scotopofzvgrid(batt1, depmax1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
+    set_scovgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1, stype1)
 
 if match_bat == 1:
 # Adjust grids with partial cells (beta):
-    if ln_zps0 == 1 & ln_zps1 == 1:
+    if (ln_zps0 == 1) & (ln_zps1 == 1):
         (batt0, batt1) = update_child_and_parent_max(batt0, batt1, kbot0, kbot1, e3t0, e3t1, e3t_1d0, depw_1d0,
 	    											 e3t_1d1, depw_1d1, iraf, jraf, zoom_ist, zoom_jst, zoom_iend,
                                                      zoom_jend, nghost, nmatch)
@@ -166,11 +162,11 @@ if match_bat == 1:
         (kbot0, batt0, e3t0, e3w0, depw0, dept0) = set_pstepvgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
         (kbot1, batt1, e3t1, e3w1, depw1, dept1) = set_pstepvgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
 
-    if ln_zps0 == 1 & ln_sco1 == 1:
+    if (ln_zps0 == 1) & (ln_sco1 == 1):
         batt1 = update_child_from_parent2(batt0, batt1, iraf, jraf, zoom_ist, zoom_jst, zoom_iend, zoom_jend, nghost,
                                           nmatch)
         (kbot1, batt1, e3t1, e3w1, depw1, dept1) = \
-            set_scovgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
+            set_scovgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1, stype1)
 
     if ln_zps0 == 1:
         (kbot0, batt0, e3t0, e3w0, depw0, dept0) = update_parent_from_child_zps(batt1, batt0, kbot0, e3t0, e3w0, depw0,
@@ -179,11 +175,12 @@ if match_bat == 1:
                                                                                 zoom_jend, nghost, nmatch)
 
 # Set vertical grids at UVF-points:
-(e3u0, e3v0, e3f0, e3uw0, e3vw0) = set_uvfvgrid(ln_zps0, ln_sco0, e3t_1d0, e3w_1d0, e3t0, e3w0)
-(e3u1, e3v1, e3f1, e3uw1, e3vw1) = set_uvfvgrid(ln_zps1, ln_sco1, e3t_1d1, e3w_1d1, e3t1, e3w1)
+(e3u0, e3v0, e3f0, e3uw0, e3vw0) = set_uvfvgrid(ln_zco0, ln_zps0, ln_sco0, e3t_1d0, e3w_1d0, e3t0, e3w0)
+(e3u1, e3v1, e3f1, e3uw1, e3vw1) = set_uvfvgrid(ln_zco1, ln_zps1, ln_sco1, e3t_1d1, e3w_1d1, e3t1, e3w1)
 
-# if ln_sco1 == 1:
-#    (kbot1, batt1, e3t1, e3w1, depw1, dept1, e3u1) = set_scovgrid_step(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
+# TBD: Finalize steps with s-coordinate over overlapping region:
+if (ln_sco1 == 1) & (ln_sco0 == 0):
+    (e3u1, e3v1) = set_scovgrid_step(batt1, kbot1, e3t1, depw1, e3u1, e3v1, nghost, nmatch, iraf, jraf)
 
 # -------------------------------------------------
 # Checks:
@@ -242,21 +239,29 @@ for i in np.arange(0, jpi1 - 1, 1):
         for k in np.arange(0, kbotv1[i, j], 1):
             batv1[i, j] = batv1[i, j] + e3v1[i, j, k]
 
-print('South West corner Interface X Position [km] and Depth [m]:')
-print('Parent', lonu0[nghost + zoom_ist - 1, nghost + zoom_jst], batu0[nghost + zoom_ist - 1, nghost + zoom_jst])
-print('Child', lonu1[nghost, nghost + 1], batu1[nghost, nghost + 1])
-print('South West corner Interface Y Position [km] and Depth [m]:')
-print(latv0[nghost + zoom_ist, nghost + zoom_jst - 1], batv0[nghost + zoom_ist, nghost + zoom_jst - 1])
-print(latv1[nghost + 1, nghost], batv1[nghost + 1, nghost])
+print(' ')
+print('ZOOM POSITION')
+print('South West corner Interface Index [], X Position [km] and Depth [m]:')
+print('Parent', nghost + zoom_ist - 1, lonu0[nghost + zoom_ist - 1, nghost + zoom_jst],
+      batu0[nghost + zoom_ist - 1, nghost + zoom_jst])
+print('Child', nghost, nghost + 1, lonu1[nghost, nghost + 1],
+      batu1[nghost, nghost + 1])
+print('South West corner Interface Index [], Y Position [km] and Depth [m]:')
+print('Parent', nghost + zoom_jst - 1, latv0[nghost + zoom_ist, nghost + zoom_jst - 1],
+      batv0[nghost + zoom_ist, nghost + zoom_jst - 1])
+print('Child', nghost + 1, nghost, latv1[nghost + 1, nghost],
+      batv1[nghost + 1, nghost])
 #
-print('North East corner Interface X Position [km] and Depth [m]:')
-print('Parent', lonu0[nghost + zoom_iend - 1, nghost + zoom_jend - 1],
+print('North East corner Interface Index [], X Position [km] and Depth [m]:')
+print('Parent', nghost + zoom_iend - 1, lonu0[nghost + zoom_iend - 1, nghost + zoom_jend - 1],
       batu0[nghost + zoom_iend - 1, nghost + zoom_jend - 1])
-print('Child', lonu1[jpi1 - nghost - 2, jpj1 - nghost - 2], batu1[jpi1 - nghost - 2, jpj1 - nghost - 2])
-print('North East corner Interface Y Position [km] and Depth [m]:')
-print('Parent', latv0[nghost + zoom_iend - 1, nghost + zoom_jend - 1],
+print('Child', jpi1 - nghost - 2, lonu1[jpi1 - nghost - 2, jpj1 - nghost - 2],
+      batu1[jpi1 - nghost - 2, jpj1 - nghost - 2])
+print('North East corner Interface Index [] Y Position [km] and Depth [m]:')
+print('Parent', nghost + zoom_jend - 1, latv0[nghost + zoom_iend - 1, nghost + zoom_jend - 1],
       batv0[nghost + zoom_iend - 1, nghost + zoom_jend - 1])
-print('Child', latv1[jpi1 - nghost - 2, jpj1 - nghost - 2], batv1[jpi1 - nghost - 2, jpj1 - nghost - 2])
+print('Child', jpj1 - nghost - 2, latv1[jpi1 - nghost - 2, jpj1 - nghost - 2],
+      batv1[jpi1 - nghost - 2, jpj1 - nghost - 2])
 
 # Draw a figure
 
@@ -302,10 +307,11 @@ for i in np.arange(nghost, jpi1 - nghost - 1, isub):
     plt.plot(lonu1[i, 4] * np.ones(jpk1), np.squeeze(depwu1[i, 4, :]), 'r')
 plt.plot(lont0[:, 4], batt0[:, 4], 'ks')
 plt.plot(lont1[:, 4], batt1[:, 4], 'r+')
-plt.xlim((0., 65.))
+plt.xlim((1., 55.))
 plt.ylim((-50., 2200.))
 plt.xlabel('X[km]')
 plt.ylabel('Depth [m]')
 plt.gca().invert_yaxis()
+plt.gcf().set_size_inches(6, 4)
 plt.savefig('Overflow.png')
 plt.show()

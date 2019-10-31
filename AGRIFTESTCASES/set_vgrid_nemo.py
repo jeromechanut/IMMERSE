@@ -1,6 +1,11 @@
 import numpy as np
 
 
+# A bottom streched vertical grid:
+def sco_strech_bottom(z, thetab):
+    return np.sinh(thetab*(z-1))/np.sinh(thetab) - 1.
+
+
 # Function to define an uniform vertical grid:
 def set_uniform_refvgrid(dz, jpk):
     depw = np.arange(0, dz * jpk, dz)
@@ -79,7 +84,7 @@ def set_pstepvgrid(bat, depw_1d, dept_1d, e3t_1d, e3w_1d):
 
 
 # Function to define vertical grid parameters in the s-coordinate case:
-def set_scovgrid(bat, depw_1d, dept_1d, e3t_1d, e3w_1d):
+def set_scovgrid(bat, depw_1d, dept_1d, e3t_1d, e3w_1d, stype):
     (jpi, jpj) = np.shape(bat)
     jpk = np.size(depw_1d)
     jpkm1 = jpk - 1
@@ -97,15 +102,26 @@ def set_scovgrid(bat, depw_1d, dept_1d, e3t_1d, e3w_1d):
         depw[:, :, k] = depw_1d[k]
         dept[:, :, k] = dept_1d[k]
 
-    # Uniform sigma distribution:
+    # Bottom streched or uniform sigma distribution:
     for i in np.arange(0, jpi, 1):
         for j in np.arange(0, jpj, 1):
             if bat[i, j] > 0:
-                e3t[i, j, :] = bat[i, j] / np.float(jpkm1)
-                e3w[i, j, :] = bat[i, j] / np.float(jpkm1)
-                e3w[i, j, 0] = 0.5 * bat[i, j] / np.float(jpkm1)
-            dept[i, j, :] = np.cumsum(e3w[i, j, :])
-            depw[i, j, :] = np.cumsum(e3t[i, j, :]) - e3t[i, j, 0]
+                for k in range(0, jpk):
+                    z1 = np.float(k) / np.float(jpkm1)
+                    z2 = (np.float(k)+0.5) / np.float(jpkm1)
+                    if stype == 1:
+                        depw[i, j, k] = bat[i, j] * sco_strech_bottom(z1, 4.)
+                        dept[i, j, k] = bat[i, j] * sco_strech_bottom(z2, 4.)
+                    elif stype == 0:
+                        depw[i, j, k] = bat[i, j] * z1
+                        dept[i, j, k] = bat[i, j] * z2
+
+                for k in range(0, jpkm1):
+                    e3t[i, j, k] = depw[i, j, k+1]-depw[i, j, k]
+                    e3w[i, j, 0] = dept[i, j, 0]
+
+                for k in range(1, jpk):
+                    e3w[i, j, k] = dept[i, j, k] - dept[i, j, k-1]
 
     return kbot, bat, e3t, e3w, depw, dept
 
@@ -160,12 +176,13 @@ def set_scotopofzvgrid(bat, depmax, depw_1d, dept_1d, e3t_1d, e3w_1d):
     # Update bathymetry:
     for i in np.arange(0, jpi, 1):
         for j in np.arange(0, jpj, 1):
-            bat[i, j] = depw[i,j,kbot[i,j]]
+            bat[i, j] = depw[i, j, kbot[i, j]]
 
     return kbot, bat, e3t, e3w, depw, dept
 
 
-def set_uvfvgrid(ln_zps, ln_sco, e3t_1d, e3w_1d, e3t, e3w):
+def set_uvfvgrid(ln_zco, ln_zps, ln_sco, e3t_1d, e3w_1d, e3t, e3w):
+    # Set vertical scale factors at U, V and F points
     #
     (jpi, jpj, jpk) = np.shape(e3t)
     e3u = np.zeros((jpi, jpj, jpk))
@@ -181,7 +198,7 @@ def set_uvfvgrid(ln_zps, ln_sco, e3t_1d, e3w_1d, e3t, e3w):
         e3uw[:, :, k] = e3w_1d[k]
         e3vw[:, :, k] = e3w_1d[k]
 
-    if ln_zps == 1:
+    if (ln_zps == 1) | (ln_zco == 1):
         for i in np.arange(0, jpi - 1, 1):
             for j in np.arange(0, jpj - 1, 1):
                 for k in np.arange(0, jpk - 1, 1):
@@ -209,70 +226,3 @@ def set_uvfvgrid(ln_zps, ln_sco, e3t_1d, e3w_1d, e3t, e3w):
                     e3f[i, j, k] = 0.5 * (e3v[i, j, k] + e3v[i + 1, j, k])
 
     return e3u, e3v, e3f, e3uw, e3vw
-
-
-def set_scovgrid_step(bat, depw_1d, dept_1d, e3t_1d, e3w_1d):
-    (jpi, jpj) = np.shape(bat)
-    jpk = np.size(depw_1d)
-    jpkm1 = jpk - 1
-    # set bottom level
-    kbot = np.ones((jpi, jpj)) * jpkm1
-    # set scale factors and depths at T-points:
-    e3t = np.zeros((jpi, jpj, jpk))
-    e3w = np.zeros((jpi, jpj, jpk))
-    depw = np.zeros((jpi, jpj, jpk))
-    dept = np.zeros((jpi, jpj, jpk))
-    for k in np.arange(0, jpk, 1):
-        e3t[:, :, k] = e3t_1d[k]
-        e3w[:, :, k] = e3w_1d[k]
-        depw[:, :, k] = depw_1d[k]
-        dept[:, :, k] = dept_1d[k]
-
-    # Uniform sigma distribution:
-    for i in np.arange(0, jpi, 1):
-        for j in np.arange(0, jpj, 1):
-            if bat[i, j] > 0:
-                e3t[i, j, :] = bat[i, j] / np.float64(jpkm1)
-                e3w[i, j, :] = bat[i, j] / np.float64(jpkm1)
-                e3w[i, j, 0] = 0.5 * bat[i, j] / np.float64(jpkm1)
-                #
-                dept[i, j, :] = np.cumsum(e3w[i, j, :])
-                depw[i, j, :] = np.cumsum(e3t[i, j, :]) - e3t[i, j, 0]
-
-    e3u = np.zeros((jpi, jpj, jpk))
-    e3v = np.zeros((jpi, jpj, jpk))
-    e3uw = np.zeros((jpi, jpj, jpk))
-    e3vw = np.zeros((jpi, jpj, jpk))
-    e3f = np.zeros((jpi, jpj, jpk))
-
-    for k in np.arange(0, jpk, 1):
-        e3u[:, :, k] = e3t_1d[k]
-        e3v[:, :, k] = e3t_1d[k]
-        e3f[:, :, k] = e3t_1d[k]
-        e3uw[:, :, k] = e3w_1d[k]
-        e3vw[:, :, k] = e3w_1d[k]
-
-    batus = np.zeros((jpi, jpj))
-    batvs = np.zeros((jpi, jpj))
-    batu = np.zeros((jpi, jpj))
-    batv = np.zeros((jpi, jpj))
-    for i in np.arange(0, jpi - 1, 1):
-        for j in np.arange(0, jpj - 1, 1):
-            batus[i, j] = min(bat[i, j], bat[i + 1, j])
-            batu[i, j] = 0.5 * (bat[i, j] + bat[i + 1, j])
-            batvs[i, j] = min(bat[i, j], bat[i, j + 1])
-            batv[i, j] = 0.5 * (bat[i, j] + bat[i, j + 1])
-
-    for i in np.arange(0, jpi - 1, 1):
-        for j in np.arange(0, jpj - 1, 1):
-            zbot = batus[i, j]
-            for k in np.arange(jpk - 2, -1, -1):
-                zsup = 0.5 * (depw[i, j, k] + depw[i + 1, j, k])
-                if batus[i, j] < batu[i, j]:    # step to the right
-                    zsup = min(zsup, zbot - 0.8 * e3t[i + 1, j, k])
-                else:                           # step to the left
-                    zsup = min(zsup, zbot - 0.8 * e3t[i, j, k])
-                e3u[i, j, k] = zbot - zsup
-                zbot = zsup
-
-    return kbot, bat, e3t, e3w, depw, dept, e3u
