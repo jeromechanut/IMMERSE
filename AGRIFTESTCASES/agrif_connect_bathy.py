@@ -65,12 +65,20 @@ def update_child_from_parent2(tabp, tabc, iraf, jraf, imin, jmin, imax, jmax, ng
 
     if flagw == 1:
         upd[0:i0st + nmatch, 1:jpj0 - 1] = 1
+    else:
+        upd[0:i0st, 1:jpj0 - 1] = 1
     if flage == 1:
         upd[i0end - nmatch + 1:jpi0, 1:jpj0 - 1] = 1
+    else:
+        upd[i0end + 1:jpi0, 1:jpj0 - 1] = 1
     if flags == 1:
         upd[1:jpi0 - 1, 0:j0st + nmatch] = 1
+    else:
+        upd[1:jpi0 - 1, 0:j0st] = 1
     if flagn == 1:
         upd[1:jpi0 - 1, j0end - nmatch + 1:jpj0] = 1
+    else:
+        upd[1:jpi0 - 1, j0end + 1:jpj0] = 1
 
     # Shift indexes to account for domain outside dynamical interface:
     ishift = np.int(np.ceil(np.float(nghost + 1)/np.float(iraf)))
@@ -142,12 +150,20 @@ def update_child_and_parent_max(tabp, tabc, kbot0, kbot1, e3t0, e3t1, e3t_1d0, d
 
     if flagw == 1:
         upd[0:i0st + nmatch, 1:jpj0 - 1] = 1
+    else:
+        upd[0:i0st, 1:jpj0 - 1] = 1
     if flage == 1:
         upd[i0end - nmatch + 1:jpi0, 1:jpj0 - 1] = 1
+    else:
+        upd[i0end + 1:jpi0, 1:jpj0 - 1] = 1
     if flags == 1:
         upd[1:jpi0 - 1, 0:j0st + nmatch] = 1
+    else:
+        upd[1:jpi0 - 1, 0:j0st] = 1
     if flagn == 1:
         upd[1:jpi0 - 1, j0end - nmatch + 1:jpj0] = 1
+    else:
+        upd[1:jpi0 - 1, j0end + 1:jpj0] = 1
 
     # Shift indexes to account for domain outside dynamical interface:
     ishift = np.int(np.ceil(np.float(nghost + 1)/np.float(iraf)))
@@ -214,13 +230,21 @@ def update_parent_from_child_zps(tabc, tabp, kbot, e3t, e3w, depw, dept, depw_1d
     flagn = min(np.squeeze(np.sum(tabp[i0st:i0end+1, j0end+1:j0end+2], axis=0)), 1.)
 
     if flagw == 1:
-        upd[0:i0st + nmatch, 1:jpj0 - 1] = 0.
+        upd[0:i0st + nmatch, 1:jpj0 - 1] = 0
+    else:
+        upd[0:i0st, 1:jpj0 - 1] = 0
     if flage == 1:
-        upd[i0end - nmatch + 1:jpi0, 1:jpj0 - 1] = 0.
+        upd[i0end - nmatch + 1:jpi0, 1:jpj0 - 1] = 0
+    else:
+        upd[i0end + 1:jpi0, 1:jpj0 - 1] = 0
     if flags == 1:
-        upd[1:jpi0 - 1, 0:j0st + nmatch] = 0.
+        upd[1:jpi0 - 1, 0:j0st + nmatch] = 0
+    else:
+        upd[1:jpi0 - 1, 0:j0st] = 0
     if flagn == 1:
-        upd[1:jpi0 - 1, j0end - nmatch + 1:jpj0] = 0.
+        upd[1:jpi0 - 1, j0end - nmatch + 1:jpj0] = 0
+    else:
+        upd[1:jpi0 - 1, j0end + 1:jpj0] = 0
 
     for ip in range(i0st, i0end+1):
         ici = nghost + (ip-i0st)*iraf + 1

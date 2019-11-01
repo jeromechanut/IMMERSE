@@ -42,11 +42,18 @@ nmatch = 2
 # -------------------------------------------------
 dy0 = dx0
 # Parent grid sizes
-jpi0 = np.int(200.e3 / dx0) + 2
+# jpi0 = np.int(200.e3 / dx0) + 2
+# Add nghost masked points to the western side
+# So that the zoom boundary can exactly lie on the wall if zoom_ist = 1 (i.e. it is closed)
+# Ideally, nghost should be 0 on the western side only but AGRIF does not discriminate
+# the nghost value for each side of the zoom...
+jpi0 = np.int(200.e3 / dx0) + 2 + nghost
 jpj0 = 3 + 2 * nghost
 jpk0 = np.int(np.round(2000. / dz0) + 1)
-zoffx0 = -0.5
-zoffy0 = -0.5
+# zoffx0 = -0.5
+# zoffy0 = -0.5
+zoffx0 = -0.5 - np.float(nghost)
+zoffy0 = -0.5 - np.float(nghost)
 #
 # Child grid sizes
 dx1 = dx0 / np.float(iraf)
@@ -54,8 +61,10 @@ dy1 = dy0 / np.float(jraf)
 jpi1 = (zoom_iend - zoom_ist) * iraf + 2 + 2 * nghost
 jpj1 = (zoom_jend - zoom_jst) * jraf + 2 + 2 * nghost
 jpk1 = np.int(np.round(2000. / dz1) + 1)
-zoffx1 = zoffx0 + (zoom_ist + nghost - 1) * iraf - nghost
-zoffy1 = zoffy0 + (zoom_jst + nghost - 1) * jraf - nghost
+# zoffx1 = zoffx0 + (zoom_ist + nghost - 1) * iraf
+# zoffy1 = zoffy0 + (zoom_jst + nghost - 1) * jraf
+zoffx1 = zoffx0 + (zoom_ist - 1) * iraf
+zoffy1 = zoffy0 + (zoom_jst - 1) * jraf
 
 
 def set_overflow_hgrid(dx, dy, jpi, jpj, zoffx, zoffy):
@@ -116,6 +125,11 @@ def set_overflow_hgrid(dx, dy, jpi, jpj, zoffx, zoffy):
 (lont1, latt1, lonu1, latu1, lonv1, latv1, lonf1, latf1,
  e1t1, e2t1, e1u1, e2u1, e1v1, e2v1, e1f1, e2f1,
  batt1, ktop1, ff_f1, ff_t1) = set_overflow_hgrid(dx1, dy1, jpi1, jpj1, zoffx1, zoffy1)
+
+# Mask West boundary points for parent only
+# (child bathymetry eventually masked latter on if needed):
+ktop0[1:nghost + 1, :] = 0
+batt0 = np.where((ktop0 == 0.), 0., batt0)
 
 # -------------------------------------------------
 # Match domains
@@ -293,20 +307,21 @@ for i in np.arange(0, jpi1 - 1, 1):
 
 isub = 1
 i0 = np.int((nghost + zoom_ist - 1) / isub)
+j0 = nghost + 1  # j index of the zonal slice
 for k in np.arange(0, jpk0, isub):
-    plt.plot(lonu0[nghost + zoom_ist - 1 - i0:nghost + zoom_ist - 1 + nmatch + 1, 4],
-             np.squeeze(depwu0[nghost + zoom_ist - 1 - i0:nghost + zoom_ist - 1 + nmatch + 1, 4, k]), 'k')
+    plt.plot(lonu0[nghost + zoom_ist - 1 - i0:nghost + zoom_ist - 1 + nmatch + 1, j0],
+             np.squeeze(depwu0[nghost + zoom_ist - 1 - i0:nghost + zoom_ist - 1 + nmatch + 1, j0, k]), 'k')
 for k in np.arange(0, jpk0, isub):
-    plt.plot(lonu0[nghost + zoom_iend - nmatch - 1:jpi0, 4],
-             np.squeeze(depwu0[nghost + zoom_iend - nmatch - 1:jpi0, 4, k]), 'k')
+    plt.plot(lonu0[nghost + zoom_iend - nmatch - 1:jpi0, j0],
+             np.squeeze(depwu0[nghost + zoom_iend - nmatch - 1:jpi0, j0, k]), 'k')
 for i in np.arange(nghost + zoom_ist - 1 - i0, jpi0, isub):
-    plt.plot(lonu0[i, 4] * np.ones(jpk0), np.squeeze(depwu0[i, 4, :]), 'k')
+    plt.plot(lonu0[i, j0] * np.ones(jpk0), np.squeeze(depwu0[i, j0, :]), 'k')
 for k in np.arange(0, jpk1, isub):
-    plt.plot(lonu1[nghost:jpi1 - nghost - 1, 4], np.squeeze(depwu1[nghost:jpi1 - nghost - 1, 4, k]), 'r')
+    plt.plot(lonu1[nghost:jpi1 - nghost - 1, j0], np.squeeze(depwu1[nghost:jpi1 - nghost - 1, j0, k]), 'r')
 for i in np.arange(nghost, jpi1 - nghost - 1, isub):
-    plt.plot(lonu1[i, 4] * np.ones(jpk1), np.squeeze(depwu1[i, 4, :]), 'r')
-plt.plot(lont0[:, 4], batt0[:, 4], 'ks')
-plt.plot(lont1[:, 4], batt1[:, 4], 'r+')
+    plt.plot(lonu1[i, j0] * np.ones(jpk1), np.squeeze(depwu1[i, j0, :]), 'r')
+plt.plot(lont0[:, j0], batt0[:, j0], 'ks')
+plt.plot(lont1[:, j0], batt1[:, j0], 'r+')
 plt.xlim((1., 55.))
 plt.ylim((-50., 2200.))
 plt.xlabel('X[km]')
