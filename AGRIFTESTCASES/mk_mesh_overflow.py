@@ -19,16 +19,20 @@ jperio0 = 0
 
 # Define Child here:
 zoom_ist = 10
-zoom_iend = 40
+zoom_iend = 41
+# Extended case:
+# zoom_iend = 61
 zoom_jst = 1
-zoom_jend = 2
-iraf = 3
+zoom_jend = 4
+# if no interface shift:
+# zoom_jend = 2
+iraf = 1
 jraf = 1
 dz1 = 100.
 ln_zco1 = 0
-ln_zps1 = 1
-ln_sco1 = 0
-stype1 = 1
+ln_zps1 = 0
+ln_sco1 = 1
+stype1 = 0
 ln_isfcav1 = 0
 jperio1 = 0
 
@@ -48,7 +52,9 @@ dy0 = dx0
 # Ideally, nghost should be 0 on the western side only but AGRIF does not discriminate
 # the nghost value for each side of the zoom...
 jpi0 = np.int(200.e3 / dx0) + 2 + nghost
-jpj0 = 3 + 2 * nghost
+jpj0 = 3 + 2 * nghost + 2
+# if no interface shift:
+# jpj0 = 3 + 2 * nghost
 jpk0 = np.int(np.round(2000. / dz0) + 1)
 # zoffx0 = -0.5
 # zoffy0 = -0.5
@@ -105,7 +111,9 @@ def set_overflow_hgrid(dx, dy, jpi, jpj, zoffx, zoffy):
 
     # Set surface mask:
     ktop = np.zeros((jpi, jpj))
-    ktop[1:jpi - 1, nghost + 1:jpj - nghost - 1] = 1
+    ktop[1:jpi - 1, nghost + 2:jpj - nghost - 2] = 1
+    # if no interface shift:
+    # ktop[1:jpi - 1, nghost + 1:jpj - nghost - 1] = 1
     batt = np.where((ktop == 0.), 0., batt)
 
     # Set coriolis parameter:
@@ -176,17 +184,21 @@ if match_bat == 1:
         (kbot0, batt0, e3t0, e3w0, depw0, dept0) = set_pstepvgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0)
         (kbot1, batt1, e3t1, e3w1, depw1, dept1) = set_pstepvgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1)
 
-    if (ln_zps0 == 1) & (ln_sco1 == 1):
+    if (ln_sco0 == 0) & (ln_sco1 == 1):
         batt1 = update_child_from_parent2(batt0, batt1, iraf, jraf, zoom_ist, zoom_jst, zoom_iend, zoom_jend, nghost,
                                           nmatch)
         (kbot1, batt1, e3t1, e3w1, depw1, dept1) = \
             set_scovgrid(batt1, depw_1d1, dept_1d1, e3t_1d1, e3w_1d1, stype1)
 
+    if (ln_sco0 == 1) & (ln_sco1 == 0):
+        batt0 = update_parent_from_child(batt1, batt0, iraf, jraf, zoom_ist, zoom_jst, zoom_iend, zoom_jend, nghost)
+        (kbot0, batt0, e3t0, e3w0, depw0, dept0) = set_scovgrid(batt0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0, stype0)
+
     if ln_zps0 == 1:
-        (kbot0, batt0, e3t0, e3w0, depw0, dept0) = update_parent_from_child_zps(batt1, batt0, kbot0, e3t0, e3w0, depw0,
-                                                                                dept0, depw_1d0, dept_1d0, e3t_1d0, e3w_1d0,
-                                                                                iraf, jraf, zoom_ist, zoom_jst, zoom_iend,
-                                                                                zoom_jend, nghost, nmatch)
+        (kbot0, batt0, e3t0, e3w0, depw0, dept0) = \
+        update_parent_from_child_zps(batt1, batt0, kbot0, e3t0, e3w0, depw0, dept0, depw_1d0, dept_1d0,
+                                     e3t_1d0, e3w_1d0, iraf, jraf, zoom_ist, zoom_jst, zoom_iend,
+                                     zoom_jend, nghost, nmatch)
 
 # Set vertical grids at UVF-points:
 (e3u0, e3v0, e3f0, e3uw0, e3vw0) = set_uvfvgrid(ln_zco0, ln_zps0, ln_sco0, e3t_1d0, e3w_1d0, e3t0, e3w0)
@@ -210,6 +222,7 @@ diag_child_parent_vol(batt1, batt0, iraf, jraf, zoom_ist, zoom_jst, zoom_iend, z
 # -------------------------------------------------
 if write_dom == 1:
     # Parent:
+    ktop0 = np.where((batt0 == 0.), 0, ktop0)  # Adjust top level in case land mask has changed in the matching process
     nc_write_dom('OVF_domcfg.nc', ln_zco0, ln_zps0, ln_sco0, ln_isfcav0, jperio0,
                  batt0, lont0, latt0, lonu0, latu0, lonv0, latv0, lonf0, latf0,
                  e1t0, e2t0, e1u0, e2u0, e1v0, e2v0, e1f0, e2f0, ff_f0, ff_t0,
@@ -218,6 +231,7 @@ if write_dom == 1:
     nc_write_coord('OVF_coordinates.nc', lont0, latt0, lonu0, latu0, lonv0, latv0, lonf0, latf0,
                    e1t0, e2t0, e1u0, e2u0, e1v0, e2v0, e1f0, e2f0)
     # Child:
+    ktop1 = np.where((batt1 == 0.), 0, ktop1)  # Adjust top level in case land mask has changed in the matching process
     nc_write_dom('1_OVF_domcfg.nc', ln_zco1, ln_zps1, ln_sco1, ln_isfcav1, jperio1,
                  batt1, lont1, latt1, lonu1, latu1, lonv1, latv1, lonf1, latf1,
                  e1t1, e2t1, e1u1, e2u1, e1v1, e2v1, e1f1, e2f1, ff_f1, ff_t1,
@@ -307,7 +321,7 @@ for i in np.arange(0, jpi1 - 1, 1):
 
 isub = 1
 i0 = np.int((nghost + zoom_ist - 1) / isub)
-j0 = nghost + 1  # j index of the zonal slice
+j0 = nghost + 2  # j index of the zonal slice
 for k in np.arange(0, jpk0, isub):
     plt.plot(lonu0[nghost + zoom_ist - 1 - i0:nghost + zoom_ist - 1 + nmatch + 1, j0],
              np.squeeze(depwu0[nghost + zoom_ist - 1 - i0:nghost + zoom_ist - 1 + nmatch + 1, j0, k]), 'k')

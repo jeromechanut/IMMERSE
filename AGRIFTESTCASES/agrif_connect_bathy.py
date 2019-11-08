@@ -52,7 +52,7 @@ def update_child_from_parent2(tabp, tabc, iraf, jraf, imin, jmin, imax, jmax, ng
 
     i0st = nghost + imin        # First Parent point inside zoom
     j0st = nghost + jmin
-    i0end = nghost + imax-1     # First Parent point inside zoom
+    i0end = nghost + imax-1     # Last Parent point inside zoom
     j0end = nghost + jmax-1
 
     upd = np.zeros((jpi0, jpj0))
@@ -83,9 +83,11 @@ def update_child_from_parent2(tabp, tabc, iraf, jraf, imin, jmin, imax, jmax, ng
     # Shift indexes to account for domain outside dynamical interface:
     ishift = np.int(np.ceil(np.float(nghost + 1)/np.float(iraf)))
     jshift = np.int(np.ceil(np.float(nghost + 1)/np.float(jraf)))
-    if iraf == 1:
+
+    if (flagw == 0) & (flage == 0):
         ishift = 0
-    if jraf == 1:
+
+    if (flags == 0) & (flagn == 0):
         jshift = 0
 
     for ip in range(i0st-ishift, i0end+1+ishift):
@@ -109,7 +111,7 @@ def update_child_from_parent3(tabp, tabc, iraf, jraf, imin, jmin, imax, jmax, ng
 
     i0st = nghost + imin     # First Parent point inside zoom
     j0st = nghost + jmin
-    i0end = nghost + imax-1  # First Parent point inside zoom
+    i0end = nghost + imax-1  # Last Parent point inside zoom
     j0end = nghost + jmax-1
 
     # Shift indexes to account for domain outside dynamical interface:
@@ -168,9 +170,11 @@ def update_child_and_parent_max(tabp, tabc, kbot0, kbot1, e3t0, e3t1, e3t_1d0, d
     # Shift indexes to account for domain outside dynamical interface:
     ishift = np.int(np.ceil(np.float(nghost + 1)/np.float(iraf)))
     jshift = np.int(np.ceil(np.float(nghost + 1)/np.float(jraf)))
-    if iraf == 1:
+
+    if (flagw == 0) & (flage == 0):
         ishift = 0
-    if jraf == 1:
+
+    if (flags == 0) & (flagn == 0):
         jshift = 0
 
     for ip in range(i0st-ishift, i0end+1+ishift):
@@ -329,9 +333,11 @@ def diag_child_parent_vol(tabc, tabp, iraf, jraf, imin, jmin, imax, jmax, nghost
     # Shift indexes to account for domain outside dynamical interface:
     ishift = np.int(np.ceil(np.float(nghost + 1)/np.float(iraf)))
     jshift = np.int(np.ceil(np.float(nghost + 1)/np.float(jraf)))
-    if iraf == 1:
+
+    if (flagw == 0) & (flage == 0):
         ishift = 0
-    if jraf == 1:
+
+    if (flags == 0) & (flagn == 0):
         jshift = 0
 
     print(' ')
@@ -368,34 +374,42 @@ def set_scovgrid_step(bat, kbot, e3t, depw, e3u, e3v, nghost, nmatch, iraf, jraf
             batvs[i, j] = min(bat[i, j], bat[i, j + 1])
             batv[i, j] = 0.5 * (bat[i, j] + bat[i, j + 1])
 
-    updu = np.zeros((jpi, jpj))
-
     # Detect open boundaries and update update array accordingly:
     flagw = min(np.sum(bat[nghost:nghost+1, :], axis=1), 1.)
     flage = min(np.sum(bat[jpi-nghost-1:jpi-nghost, :], axis=1), 1.)
     flags = min(np.squeeze(np.sum(bat[:, nghost:nghost+1], axis=0)), 1.)
     flagn = min(np.squeeze(np.sum(bat[:, jpj-nghost-1:jpj-nghost], axis=0)), 1.)
 
-    # TO DO: Discriminate U and V connection zones:
-    # add update of e3uw, e3vw, e3f
-    upd = np.zeros((jpi, jpj))
+    # TODO: f-points case
+    # and take a more careful look at update location
+    upd_u = np.zeros((jpi, jpj))
     if flagw == 1:
-        upd[0:nghost + nmatch*iraf + 1, :] = 1
+        upd_u[0:nghost + nmatch*iraf, :] = 1
     if flage == 1:
-        upd[jpi-nghost - nmatch*iraf:jpi, :] = 1
+        upd_u[jpi-nghost - nmatch*iraf - 1:jpi, :] = 1
     if flags == 1:
-        upd[:, 0:nghost + nmatch*jraf + 1] = 1
+        upd_u[:, 0:nghost + nmatch*jraf] = 1
     if flagn == 1:
-        upd[:, jpj - nghost - nmatch*jraf:jpj] = 1
+        upd_u[:, jpj - nghost - nmatch*jraf-1:jpj] = 1
+
+    upd_v = np.zeros((jpi, jpj))
+    if flagw == 1:
+        upd_v[0:nghost + nmatch*iraf + 1, :] = 1
+    if flage == 1:
+        upd_v[jpi-nghost - nmatch*iraf:jpi, :] = 1
+    if flags == 1:
+        upd_v[:, 0:nghost + nmatch*jraf + 1] = 1
+    if flagn == 1:
+        upd_v[:, jpj - nghost - nmatch*jraf:jpj] = 1
 
     for i in np.arange(0, jpi - 1, 1):
         for j in np.arange(0, jpj - 1, 1):
             # U-points:
             zbot = batus[i, j]
             jkmax = np.int(min(kbot[i, j], kbot[i+1, j]) - 1)
-            if (jkmax >= 0) & (upd[i,j] == 1):
+            if (jkmax >= 0) & (upd_u[i, j] == 1):
                 for k in np.arange(jkmax, 0, -1):
-                    zsup = 0.5*( depw[i, j, k] + depw[i + 1, j, k] )
+                    zsup = 0.5*(depw[i, j, k] + depw[i + 1, j, k])
                     if batus[i, j] < batu[i, j]:    # step to the right
                         zsup = min(zsup, zbot - 0.8 * e3t[i + 1, j, k])
                     else:                           # step to the left
@@ -405,7 +419,7 @@ def set_scovgrid_step(bat, kbot, e3t, depw, e3u, e3v, nghost, nmatch, iraf, jraf
             # V-points:
             zbot = batvs[i, j]
             jkmax = np.int(min(kbot[i, j], kbot[i, j+1]) - 1)
-            if (jkmax >= 0) & (upd[i, j] == 1):
+            if (jkmax >= 0) & (upd_v[i, j] == 1):
                 for k in np.arange(jkmax, 0, -1):
                     zsup = 0.5 * (depw[i, j, k] + depw[i, j + 1, k])
                     if batvs[i, j] < batv[i, j]:    # step to the right
