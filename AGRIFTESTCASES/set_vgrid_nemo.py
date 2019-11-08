@@ -3,7 +3,7 @@ import numpy as np
 
 # A bottom streched vertical grid:
 def sco_strech_bottom(z, thetab):
-    return np.sinh(thetab*(z-1))/np.sinh(thetab) - 1.
+    return np.sinh(thetab*(z-1))/np.sinh(thetab) + 1.
 
 
 # Function to define an uniform vertical grid:
