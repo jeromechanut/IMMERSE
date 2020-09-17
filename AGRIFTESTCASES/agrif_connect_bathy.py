@@ -396,7 +396,7 @@ def set_scovgrid_step(bat, kbot, e3t, depw, e3u, e3v, nghost, nmatch, iraf, jraf
     if flagw == 1:
         upd_v[0:nghost + nmatch*iraf + 1, :] = 1
     if flage == 1:
-        upd_v[jpi-nghost - nmatch*iraf:jpi, :] = 1
+        upd_v[jpi-nghost - nmatch*iraf - 1:jpi, :] = 1
     if flags == 1:
         upd_v[:, 0:nghost + nmatch*jraf + 1] = 1
     if flagn == 1:
