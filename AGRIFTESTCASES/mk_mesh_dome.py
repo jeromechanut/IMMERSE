@@ -313,11 +313,13 @@ batt1[jpi1-nghost-1:jpi1-1, :] = np.nan
 batt1[:, 0:nghost+1] = np.nan
 batt1[:, jpj1-nghost-1:jpj1-1] = np.nan
 batt1 = np.ma.masked_invalid(batt1)
-plt.pcolor(lont0-0.5*dx0*1.e-3, latt0-0.5*dy0*1.e-3, batt0, vmin=np.nanmin(batt0), vmax=np.nanmax(batt0), edgecolor='k')
+cs = plt.pcolor(lont0-0.5*dx0*1.e-3, latt0-0.5*dy0*1.e-3, batt0, vmin=np.nanmin(batt0), vmax=np.nanmax(batt0), edgecolor='k')
 plt.pcolor(lont1-0.5*dx1*1.e-3, latt1-0.5*dy1*1.e-3, batt1, vmin=np.nanmin(batt0), vmax=np.nanmax(batt0), edgecolor='r')
 ax.set_xlim(-500, 250)
 ax.set_ylim(-300,  70)
 ax.set_aspect('equal')
+cbar = fig.colorbar(cs, orientation='horizontal')
+cbar.set_label('Depth [m]')
 plt.xlabel('X [km]')
 plt.ylabel('Y [km]')
 plt.title('DOME')
