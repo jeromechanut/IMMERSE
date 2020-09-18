@@ -381,16 +381,15 @@ def set_scovgrid_step(bat, kbot, e3t, depw, e3u, e3v, nghost, nmatch, iraf, jraf
     flagn = min(np.squeeze(np.sum(bat[:, jpj-nghost-1:jpj-nghost], axis=0)), 1.)
 
     # TODO: f-points case
-    # and take a more careful look at update location
     upd_u = np.zeros((jpi, jpj))
     if flagw == 1:
         upd_u[0:nghost + nmatch*iraf, :] = 1
     if flage == 1:
-        upd_u[jpi-nghost - nmatch*iraf - 1:jpi, :] = 1
+        upd_u[jpi - nghost - nmatch*iraf:jpi, :] = 1
     if flags == 1:
-        upd_u[:, 0:nghost + nmatch*jraf] = 1
+        upd_u[:, 0:nghost + nmatch*jraf + 1] = 1
     if flagn == 1:
-        upd_u[:, jpj - nghost - nmatch*jraf-1:jpj] = 1
+        upd_u[:, jpj - nghost - nmatch*jraf - 1:jpj] = 1
 
     upd_v = np.zeros((jpi, jpj))
     if flagw == 1:
@@ -398,7 +397,7 @@ def set_scovgrid_step(bat, kbot, e3t, depw, e3u, e3v, nghost, nmatch, iraf, jraf
     if flage == 1:
         upd_v[jpi-nghost - nmatch*iraf - 1:jpi, :] = 1
     if flags == 1:
-        upd_v[:, 0:nghost + nmatch*jraf + 1] = 1
+        upd_v[:, 0:nghost + nmatch*jraf] = 1
     if flagn == 1:
         upd_v[:, jpj - nghost - nmatch*jraf:jpj] = 1
 
