@@ -8,8 +8,12 @@ Outer grid has zps coordinates and 60m (1km) vertical (horizontal) grid spacing.
 ### zps with a vertical refinement of 3
 ![](OVF_zoom_zps_zps.gif)
 ### sco domain intersecting slope
-![sco](OVF_zoom_zps_sco.gif)
+![](OVF_zoom_zps_sco.gif)
+The animation above was performed with an horrible bug in the definition of s-coordinates. This was affecting the definition of the thickness of the first layer at w-point (i.e. e3w(1), with Fortran indexing). This was impacting the pressure computation and, quite surprinsingly, was slowing down the plume enough such that the results were pretty good. Correcting this, issues at the interface show up, with a plume leaving the bottom across the interface and flushed out the zoom horizontally.
+![](OVF_zoom_zps_sco_corrected.gif)
+Smoothing layers horizontally and adding a couple of levels near the bottom does improve the connection as seen in the next video.
+![](OVF_zoom_zps_sco_corrected_smooth.gif)
 ### sco extended domain
-![sco](OVF_zoom_zps_sco3.gif)
+![](OVF_zoom_zps_sco3.gif)
 ### sco extended domain with 1-way nesting
-![sco](OVF_zoom_zps_sco4.gif)
+![](OVF_zoom_zps_sco4.gif)
