@@ -118,8 +118,8 @@ def set_scovgrid(bat, depw_1d, dept_1d, e3t_1d, e3w_1d, stype):
 
                 for k in range(0, jpkm1):
                     e3t[i, j, k] = depw[i, j, k+1]-depw[i, j, k]
-                    e3w[i, j, 0] = dept[i, j, 0]
 
+                e3w[i, j, 0] = 2.*dept[i, j, 0]
                 for k in range(1, jpk):
                     e3w[i, j, k] = dept[i, j, k] - dept[i, j, k-1]
 
@@ -165,7 +165,7 @@ def set_scotopofzvgrid(bat, depmax, depw_1d, dept_1d, e3t_1d, e3w_1d):
                 for k in range(0, jpks+1):
                     e3t[i, j, k] = zbat * e3t_1d[k] / depw_1d[jpks]
                     e3w[i, j, k] = zbat * e3w_1d[k] / depw_1d[jpks]
-                e3w[i, j, 0] = 0.5 * e3t[i, j, 0]
+                e3w[i, j, 0] = e3t[i, j, 0]
 
     for i in np.arange(0, jpi, 1):
         for j in np.arange(0, jpj, 1):
